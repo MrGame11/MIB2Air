@@ -1,0 +1,11 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+exclude = ["local", ".venv"]
+
+[tool.ruff.lint]
+select = ["I", "F", "E9"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

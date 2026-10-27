@@ -1,0 +1,20 @@
+# Private device captures, backups, caches and build workspaces
+local/
+
+# Development caches
+.venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.DS_Store
+
+# Never commit OEM binaries or build outputs, wherever they end up
+tsd.mibstd2*.main
+wirelessadapter.restore
+*.elf
+*.o
+*.so
+*.so.*
+*.zip
+*.7z
+*.log
