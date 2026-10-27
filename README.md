@@ -14,6 +14,30 @@ WirelessAdapter and SAL services. Setup runs on your computer in Docker, patches
 of those services for your exact firmware and installs them beside the originals.
 Unknown firmware is never patched.
 
+## How it works
+
+The MIB already has a Wi-Fi hotspot and Bluetooth; WirelessBridge teaches its own
+Android Auto services to use them instead of a USB cable.
+
+1. **Bluetooth starts the connection.** When your paired phone connects to the car over
+   Bluetooth, the unit offers wireless Android Auto and sends the phone the details of
+   the MIB's own Wi-Fi hotspot.
+2. **The phone joins the MIB's hotspot.** It connects to the network you enabled in the
+   stock Wi-Fi menu, the same way it would join any car with built-in wireless
+   Android Auto. Your hotspot name and password are only read, never changed.
+3. **Android Auto runs over Wi-Fi.** The unit accepts the phone's connection and hands
+   it to its original Android Auto receiver, so the session looks and behaves like a
+   USB one. The phone appears in the MIB's smartphone list as **Wireless AA**.
+
+In everyday use:
+
+- Plugging the phone in by USB still works as before; while a USB session is active,
+  wireless connections are not accepted.
+- Turning the MIB's hotspot off disables wireless Android Auto until you turn it on again.
+- Nothing in the firmware is replaced. The patched services run from their own folder
+  beside the originals, and if one of them stops, the unit restarts the original
+  service. **Remove** in setup restores the original configuration.
+
 ## Supported firmware
 
 | Firmware | Variant | Status |
