@@ -66,7 +66,7 @@ Details and wiring are in the [setup guide](docs/SETUP.md#before-you-start).
 Choose an action and follow the prompts. Install, update, removal, diagnostics and
 stock-data collection are explained in the [setup guide](docs/SETUP.md).
 
-![](docs/setup.svg)
+![](docs/setup.png)
 
 ## Documentation
 
