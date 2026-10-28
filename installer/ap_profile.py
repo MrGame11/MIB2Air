@@ -4,6 +4,37 @@ import re
 import xml.etree.ElementTree as ET
 
 AP_PATH = "/tsd/var/networking/wlanapconfig.xml"
+MODE_PATH = "/tsd/var/networking/wlanlastmode.conf"
+# WlanRole values as NetMgr logs them; the runtime needs the access point (1 or 3).
+ROLE_AP, ROLE_CLIENT, ROLE_COMBINED = 1, 2, 3
+COMBINED_WARNING = (
+    "MIB Wi-Fi is set to access point + client. While its client network is out of "
+    "range, the MIB leaves the access point's channel every 30 s to look for it, "
+    "and the phone drops Android Auto. Switch MIB Wi-Fi to the access point only."
+)
+
+
+def role_from_lastmode(document):
+    """Active native Wi-Fi role; 0 when Wi-Fi is off, None when unrecognised."""
+    fields = dict(re.findall(rb"(?m)^(WlanRole|Active)=(\S*)\s*$", document))
+    if fields.get(b"Active") == b"false":
+        return 0
+    if fields.get(b"Active") != b"true" or fields.get(b"WlanRole") not in (
+        b"1",
+        b"2",
+        b"3",
+    ):
+        return None
+    return int(fields[b"WlanRole"])
+
+
+def wifi_role(device):
+    if not device.exists(MODE_PATH):
+        return None
+    try:
+        return role_from_lastmode(device.read(MODE_PATH))
+    except ValueError:
+        return None
 
 
 def profile_from_xml(document):

@@ -8,6 +8,8 @@ BASE = "/tsd/var/wireless-aa"
 CURRENT = BASE + "/current"
 RELEASES = BASE + "/releases"
 RELEASE_ID = r"[0-9a-f]{16}"
+# `git describe` of the setup checkout, e.g. v0.2.0-3-g5fb6322-dirty.
+VERSION_ID = r"[0-9A-Za-z][0-9A-Za-z._+-]{0,63}"
 REMOTE = {
     "wa": "/tsd/bin/wirelessadapter/tsd.mibstd2.system.wirelessadapter.main",
     "sal": "/tsd/bin/sal/tsd.mibstd2.sal.main",

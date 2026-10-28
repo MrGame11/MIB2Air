@@ -1,6 +1,7 @@
 """Private build inside Docker. The user-facing setup exposes install/remove/diagnostics."""
 
 import os
+import re
 import secrets
 import signal
 import subprocess
@@ -12,7 +13,14 @@ from installer import configuration
 from installer.elf import require, sha256
 from installer.firmware import INPUTS, checked_build
 from installer.patching import patch_image, write_new
-from installer.paths import PATCHED, RECOVERY, ROOT, json_bytes, workdir
+from installer.paths import (
+    PATCHED,
+    RECOVERY,
+    ROOT,
+    VERSION_ID,
+    json_bytes,
+    workdir,
+)
 from installer.progress import detail, enabled
 
 FILES = (
@@ -26,6 +34,12 @@ FILES = (
 
 def new_release():
     return secrets.token_hex(8)
+
+
+def version():
+    """Setup checkout version passed in by setup.sh; "unknown" without git."""
+    value = os.environ.get("WAA_VERSION", "")
+    return value if re.fullmatch(VERSION_ID, value) else "unknown"
 
 
 def package(output, release):
@@ -59,6 +73,7 @@ def package(output, release):
     manifest = {
         "schema": 3,
         "release": release,
+        "version": version(),
         "firmware_profile": binding["profile"],
         "profile_sha256": binding["profile_sha256"],
         "files": {name: sha256(data) for name, data in files.items()},

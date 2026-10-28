@@ -44,7 +44,7 @@ In everyday use:
 | --- | --- | --- |
 | P0480T | cpu | Supported |
 
-Other versions are refused. To ask for one, collect stock data from your unit as
+Versions not listed above are refused. To ask for one, collect stock data from your unit as
 described in [Adding a firmware version](docs/DEVELOPMENT.md#adding-a-firmware-version).
 
 ## Requirements

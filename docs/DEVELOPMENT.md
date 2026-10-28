@@ -23,9 +23,15 @@ a package with:
 
 ```sh
 docker build --target runtime -t mib-std2-wirelessbridge-waa .
-docker run --rm -v "$PWD/local:/app/local" --entrypoint python \
-    mib-std2-wirelessbridge-waa -m installer.build --out /app/local/package
+docker run --rm -v "$PWD/local:/app/local" -v "$PWD/installer:/app/installer:ro" \
+    -v "$PWD/native:/app/native:ro" -v "$PWD/profiles:/app/profiles:ro" \
+    --entrypoint python mib-std2-wirelessbridge-waa \
+    -m installer.build --out /app/local/package
 ```
+
+The image contains only the toolchain; the code is mounted read-only at run time.
+`setup.sh` labels the image with a checksum of the `Dockerfile` and skips the build
+while it matches, which keeps setup usable offline.
 
 Repeated integrity checks compute SHA-256 on MIB with a temporary verified command
 that is removed when setup disconnects. Originals cached in `local/cache/` are reused

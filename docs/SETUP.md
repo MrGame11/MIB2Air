@@ -35,13 +35,31 @@ Start Docker, then launch the interactive setup from the repository root:
 ./setup.sh
 ```
 
-Choose **Install**, **Remove**, **Diagnostics**, or **Collect stock data** from the menu
-(arrow keys and Enter, or 1–4).
+The first launch prepares a Docker image with the toolchain (Python, clang and two
+Python packages) and needs internet access for that, once. Later launches reuse the
+image and work offline; it is rebuilt only when the `Dockerfile` changes, so pulling
+a new version of this repository does not need a rebuild.
+
+Setup then asks for the MIB IPv4 address and root password (press Enter for
+`root`). It suggests the last address while the computer is on the same network,
+otherwise the computer's gateway, which is the MIB when the computer is connected to
+the MIB access point.
+The computer must be able to reach the unit over Telnet and FTP, and the unit must be
+able to connect back to TCP ports 41000–41031 on the computer: downloads use active
+FTP, because the stock firewall stalls passive downloads to about 3 KB/s. If those
+ports are blocked, setup falls back to passive FTP and says so after connecting.
+
+After connecting, setup shows what is on the unit: the firmware profile, the installed
+version and whether it is running or waits for a reboot, next to the version of this
+checkout. The installed version is the `git describe` of the checkout that installed
+or last updated it, recorded in `/tsd/var/wireless-aa/install.json`; installations
+made before versioning show `unknown` until their next update.
+
+The menu below lists only the actions that fit that state: **Install** (or **Update**
+when installed), **Remove** (or **Continue removal**), **Diagnostics**, and **Collect
+stock data**. Use the arrow keys and Enter, or the number keys.
 You can also skip the menu with `./setup.sh install`, `./setup.sh remove`, or
-`./setup.sh diagnose`.
-Setup prepares its Docker environment automatically, then asks for the MIB IPv4
-address (the last one is remembered) and root password. The computer must be
-able to reach the unit over Telnet and FTP. Inputs are captured from
+`./setup.sh diagnose`. Inputs are captured from
 your unit and compiled locally in Docker. Keep `local/`: it contains private
 device files, installation backups and build logs. `local/cache/` keeps the large
 originals of recognised firmware so later runs (updates, reinstalls) only download
@@ -51,13 +69,31 @@ Reboot the MIB manually when instructed. Enable its native Wi-Fi access point
 in the stock menu, disconnect the phone's USB cable, disable the phone's
 hotspot and connect Bluetooth to the vehicle. The runtime selects the first valid
 inbound SPP phone connection and keeps that identity until session cleanup.
-Native WPA2 personal (`Security=3`) on a /24 network is required. The runtime waits for the AP;
+Native WPA2 personal (`Security=3`) on a /24 network is required. Use the access
+point only: in access point + client mode, while its client network is out of range,
+the MIB leaves the access point's channel every 30 s to look for it, and the phone
+drops Android Auto. Setup shows the current Wi-Fi mode after connecting and warns
+about this mode after Install, Update and Diagnostics. Client mode is needed only if
+you run setup over another network instead of the MIB access point. The runtime waits for the AP;
 it does not enable it or change Wi-Fi modes. Turning the AP off stops wireless
 AA and pauses connection attempts until it is enabled again.
 
+### Without internet in the car
+
+The computer can connect straight to the MIB access point; no phone hotspot or mobile
+data is needed:
+
+1. At home, run `./setup.sh` once so the Docker image is prepared, then quit with
+   Ctrl-C when it asks for the MIB address.
+2. In the car, set MIB Wi-Fi to the access point only and connect the computer to it.
+3. Run `./setup.sh`, accept the suggested address (the MIB) and the default password,
+   and choose **Install**.
+4. Reboot the MIB. The computer reconnects to the access point by itself; it does not
+   interfere with the phone, which uses the same access point for Android Auto.
+
 ## Update
 
-Pull the new version of this repository and choose **Install** again. Setup checks the
+Pull the new version of this repository and choose **Update**. Setup checks the
 installed version, rebuilds from the originals on the unit and compares the result:
 
 - If nothing changed, it reports that the unit is already up to date and writes nothing.

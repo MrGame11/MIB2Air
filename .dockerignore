@@ -1,22 +1,3 @@
+# The image holds only the toolchain; setup.sh mounts the code at run time.
 *
 !Dockerfile
-!installer/
-!installer/**
-!native/
-!native/**
-!profiles/
-!profiles/**
-**/__pycache__/
-**/*.pyc
-**/*.elf
-**/*.o
-**/*.so
-**/*.7z
-**/*.zip
-**/*.log
-**/.DS_Store
-**/tsd.mibstd2*.main
-**/wirelessadapter.restore
-**/libc.so*
-
-!THIRD_PARTY_NOTICES.md

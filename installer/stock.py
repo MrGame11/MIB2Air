@@ -9,6 +9,7 @@ import zipfile
 from pathlib import Path
 
 from installer.ap_profile import AP_PATH
+from installer.ap_profile import MODE_PATH as AP_MODE_PATH
 from installer.elf import require, sha256
 from installer.firmware import INPUTS, source_digest
 from installer.paths import BASE, REMOTE, ROOT, json_bytes
@@ -16,7 +17,6 @@ from installer.progress import detail, step, summary
 from installer.result import Result
 from installer.snapshot import download, save_unprofiled
 
-AP_MODE_PATH = "/tsd/var/networking/wlanlastmode.conf"
 # Values a profile port needs to compare; every other AP value is replaced.
 AP_PUBLIC_TAGS = {b"Security", b"HideSSID", b"Channel"}
 

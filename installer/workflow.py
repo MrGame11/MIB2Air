@@ -7,6 +7,7 @@ import secrets
 from pathlib import Path
 
 from installer import configuration
+from installer.ap_profile import wifi_role
 from installer.build import FILES, build_package, new_release
 from installer.device import EXECUTABLE, PRIVATE, writable_root
 from installer.elf import Refuse, is_sha256, require, sha256
@@ -20,6 +21,7 @@ from installer.paths import (
     RELEASE_ID,
     RELEASES,
     REMOTE,
+    VERSION_ID,
     json_bytes,
     release_dir,
     release_file,
@@ -63,6 +65,8 @@ def validate_record(record):
         "Unsupported installation journal",
     )
     require(valid_release(record["release"]), "Invalid release in journal")
+    if "version" in record:
+        require(valid_version(record["version"]), "Invalid version in journal")
     if "previous" in record:
         require(valid_release(record["previous"]), "Invalid release in journal")
     require(
@@ -127,7 +131,8 @@ def validate_record(record):
     if "next" in record:
         upcoming = record["next"]
         require(
-            set(upcoming) == {"release", "files"}
+            set(upcoming) - {"version"} == {"release", "files"}
+            and valid_version(upcoming.get("version", "unknown"))
             and valid_release(upcoming["release"])
             and upcoming["release"] not in (record["release"], record.get("previous")),
             "Invalid pending release",
@@ -138,6 +143,10 @@ def validate_record(record):
 
 def valid_release(value):
     return type(value) is str and re.fullmatch(RELEASE_ID, value) is not None
+
+
+def valid_version(value):
+    return type(value) is str and re.fullmatch(VERSION_ID, value) is not None
 
 
 def valid_files(files):
@@ -218,12 +227,9 @@ def prune(device, record):
 
 def finish_update(device, record):
     upcoming = record.pop("next")
-    record.update(
-        previous=record["release"],
-        release=upcoming["release"],
-        files=upcoming["files"],
-        phase="installed",
-    )
+    # Journals written before versioning have no version for either release.
+    record.pop("version", None)
+    record.update(upcoming, previous=record["release"], phase="installed")
     saved(device, record)
     prune(device, record)
 
@@ -260,6 +266,34 @@ def check_installed(device, record):
             sha256(device.read(REMOTE[name])) == record["files"][name],
             "Installed config changed: " + name,
         )
+
+
+def inspect(device):
+    """What is on the unit, for the setup header. Read-only: never settles or repairs."""
+    return dict(installation(device), wifi=wifi_role(device))
+
+
+def installation(device):
+    if not device.exists(BASE):
+        return {"phase": "not_installed"}
+    if not device.exists(JOURNAL):
+        return {"phase": "unjournaled"}
+    try:
+        record = load(device)
+    except json.JSONDecodeError:
+        return {"phase": "invalid", "error": "Unreadable installation journal"}
+    except ValueError as error:
+        return {"phase": "invalid", "error": str(error)}
+    state = {
+        "phase": record["phase"],
+        "version": record.get("version", "unknown"),
+        "release": record["release"],
+        "profile": record["profile"],
+        "running": record["release"] in running_releases(device),
+    }
+    if "next" in record:
+        state["next"] = record["next"].get("version", "unknown")
+    return state
 
 
 def update(device, directory, record):
@@ -308,7 +342,12 @@ def update(device, directory, record):
     summary("unchanged · space ok")
     step("Upload new version", index=4, total=5)
     record.update(
-        phase="updating", next={"release": release, "files": manifest["files"]}
+        phase="updating",
+        next={
+            "release": release,
+            "version": manifest["version"],
+            "files": manifest["files"],
+        },
     )
     saved(device, record)
     device.mkdir(release_dir(release))
@@ -393,6 +432,7 @@ def install(device, directory):
     record = {
         "schema": 3,
         "release": release,
+        "version": manifest["version"],
         "profile": snapshot["profile"],
         "root_mode": device.root_mode(),
         "phase": "preparing",

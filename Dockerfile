@@ -14,9 +14,9 @@ RUN apt-get update \
 
 WORKDIR /app
 RUN pip install --no-cache-dir pyelftools==0.32 rich==15.0.0
-COPY THIRD_PARTY_NOTICES.md ./
-COPY installer/ installer/
-COPY native/ native/
-COPY profiles/ profiles/
+# Only the toolchain lives in the image; setup.sh mounts the checkout read-only, so
+# code updates need no rebuild and setup runs offline once this image exists.
+ARG DEPS=unknown
+LABEL org.wirelessbridge.deps=$DEPS
 
 ENTRYPOINT ["python", "-m", "installer"]

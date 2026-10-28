@@ -3,20 +3,40 @@
 import ftplib
 import gzip
 import io
+import ipaddress
+import json
 import re
 import shlex
+import socket
+import time
 import uuid
 from contextlib import contextmanager
 from pathlib import PurePosixPath
 
 from installer.ap_profile import AP_PATH, profile_from_xml
 from installer.elf import require, sha256
-from installer.paths import BASE, CONFIGS, RELEASE_ID, RELEASES, REMOTE, release_dir
+from installer.paths import (
+    BASE,
+    CONFIGS,
+    RELEASE_ID,
+    RELEASES,
+    REMOTE,
+    ROOT,
+    release_dir,
+)
 from installer.progress import detail, size, transfer
 from installer.transport import Session, read_command, wait_prompt
 
 PRIVATE = {"mode": 0o600, "uid": 0, "gid": 0}
 EXECUTABLE = dict(PRIVATE, mode=0o700)
+# Active-mode FTP data ports; setup.sh publishes the same range from the container.
+DATA_PORTS = range(41000, 41032)
+# ftpd always connects from port 20 and pf keeps a closed connection's state for a
+# while, so a data port is reused only after this long, also across setup runs.
+PORT_COOLDOWN = 120  # pf drops closed states after ~90 s
+PORT_LOG = ROOT / "local" / "ftp-ports.json"
+# A single segment arrives before pf can stall the transfer.
+ACTIVE_MINIMUM = 1448
 
 
 def quote(path):
@@ -27,7 +47,30 @@ def quote(path):
     return shlex.quote(path)
 
 
+def data_port():
+    """A published data port idle for PORT_COOLDOWN, then marked used; else None."""
+    now = time.time()
+    try:
+        used = {
+            int(port): float(at)
+            for port, at in json.loads(PORT_LOG.read_text()).items()
+        }
+    except (OSError, ValueError, TypeError, AttributeError):
+        used = {}
+    used = {port: at for port, at in used.items() if 0 <= now - at < PORT_COOLDOWN}
+    port = next((p for p in DATA_PORTS if p not in used), None)
+    if port:
+        used[port] = now
+        try:
+            PORT_LOG.write_text(json.dumps(used))
+        except OSError:
+            pass
+    return port
+
+
 class Device:
+    active = False  # Active-mode FTP downloads, verified at login.
+
     def __init__(self, host, password, *, connect_ftp=True):
         self.session = Session(host, 23)
         self.ftp = None
@@ -52,9 +95,61 @@ class Device:
                 rows == [("0", "0", "0")],
                 "Cannot verify root shell identity",
             )
+            if self.ftp:
+                self.active = self._probe_active(host, password)
         except BaseException:
             self.close()
             raise
+
+    def _probe_active(self, host, password):
+        """Prefer active FTP downloads: the stock pf drops most data the MIB sends
+        on inbound TCP (state from the SYN-ACK misses the peer's window scale),
+        so passive downloads crawl at ~3 KB/s. MIB-initiated connections do not."""
+        # The client address as the MIB sees it; ftpd checks PORT against it.
+        found = re.search(r"Connected to (\S+)", self.ftp.sendcmd("STAT"))
+        try:
+            self.client = str(ipaddress.IPv4Address(found[1] if found else ""))
+        except ValueError:
+            return False
+        port = data_port()
+        try:
+            if port:
+                self.ftp.sock.settimeout(10)
+                probe = REMOTE["pf.conf"]
+                data = bytearray()
+                self._retrieve_active(probe, data.extend, port)
+                if len(data) == self.size(probe):
+                    self.ftp.sock.settimeout(60)
+                    return True
+        except (OSError, EOFError, ftplib.Error):
+            pass
+        # A failed data connection can leave a reply pending; start over.
+        self.ftp.close()
+        self.ftp = ftplib.FTP(host, timeout=60)
+        self.ftp.login("root", password)
+        return False
+
+    def _retrieve_active(self, path, callback, port):
+        with socket.socket() as listener:
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listener.bind(("", port))
+            listener.listen(1)
+            listener.settimeout(10)
+            self.ftp.voidcmd("TYPE I")
+            self.ftp.voidcmd(
+                "PORT "
+                + ",".join((*self.client.split("."), str(port >> 8), str(port & 255)))
+            )
+            # ftpd connects before its preliminary reply; 425 when it cannot.
+            reply = self.ftp.sendcmd("RETR " + path)
+            if not reply.startswith("1"):
+                raise ftplib.error_reply(reply)
+            connection, _ = listener.accept()
+        with connection:
+            connection.settimeout(60)
+            while chunk := connection.recv(64 * 1024):
+                callback(chunk)
+        self.ftp.voidresp()
 
     def close(self):
         helper = self._checksum_path
@@ -135,7 +230,11 @@ class Device:
             data.extend(chunk)
             transfer(len(data), expected)
 
-        self.ftp.retrbinary("RETR " + path, received, blocksize=64 * 1024)
+        port = self.active and expected > ACTIVE_MINIMUM and data_port()
+        if port:
+            self._retrieve_active(path, received, port)
+        else:
+            self.ftp.retrbinary("RETR " + path, received, blocksize=64 * 1024)
         require(len(data) == expected, "Incomplete file transfer: " + path)
         return bytes(data)
 
