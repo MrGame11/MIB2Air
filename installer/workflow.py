@@ -552,7 +552,9 @@ def remove(device, directory):
     if recovery:
         step("Check Bluetooth recovery")
         check_payload(device, record)
-        recheck(device, record, LARGE)
+        # UUID recovery uses the original services and libc, not the separately
+        # managed GAL plugin. Preserve independent KombiBridge updates on removal.
+        recheck(device, record, ("wa", "sal", "libc"))
         token = record.get("token")
         proof = BASE + "/run/restore-result"
         confirmed = (
