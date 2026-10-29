@@ -59,6 +59,20 @@ Details and wiring are in the [setup guide](docs/SETUP.md#before-you-start).
 
 ## Usage
 
+On Windows, start Docker Desktop with Linux containers, extract the source ZIP,
+and double-click `setup.bat`, or run this from PowerShell:
+
+```powershell
+.\setup.bat
+```
+
+No Git Bash, host Python, or separate WSL distribution is needed. The launcher
+checks Docker, prepares the image and opens the same setup menu. Its window stays
+open after setup exits so errors remain visible. Docker Desktop itself must already
+be installed and configured.
+
+On macOS or Linux:
+
 ```sh
 ./setup.sh
 ```

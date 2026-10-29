@@ -29,7 +29,14 @@
 
 ## Install
 
-Start Docker, then launch the interactive setup from the repository root:
+Start Docker, then launch the interactive setup from the repository root.
+On Windows, use Docker Desktop with Linux containers and run `setup.bat`
+(double-click it, or enter `.\setup.bat` in PowerShell). Extract ZIP downloads
+before running setup. Git Bash and a separate WSL distribution are not required.
+The launcher uses the built-in Windows PowerShell without changing its saved
+execution policy. Docker Desktop must already be installed and configured.
+
+On macOS or Linux:
 
 ```sh
 ./setup.sh
@@ -59,7 +66,8 @@ The menu below lists only the actions that fit that state: **Install** (or **Upd
 when installed), **Remove** (or **Continue removal**), **Diagnostics**, and **Collect
 stock data**. Use the arrow keys and Enter, or the number keys.
 You can also skip the menu with `./setup.sh install`, `./setup.sh remove`, or
-`./setup.sh diagnose`. Inputs are captured from
+`./setup.sh diagnose` (on Windows: `.\setup.bat install`,
+`.\setup.bat remove`, or `.\setup.bat diagnose`). Inputs are captured from
 your unit and compiled locally in Docker. Keep `local/`: it contains private
 device files, installation backups and build logs. `local/cache/` keeps the large
 originals of recognised firmware so later runs (updates, reinstalls) only download
