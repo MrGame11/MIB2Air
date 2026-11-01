@@ -1,4 +1,4 @@
-# MIB STD2 WirelessBridge
+# Mib2Air for MIB STD2
 
 Just a backup with a slightly better name, in my opinion. ;)
 
