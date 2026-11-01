@@ -1,5 +1,9 @@
 # MIB STD2 WirelessBridge
 
+Just a backup with a slightly better name, in my opinion. ;)
+
+(Maybe I'll add some features later, who knows?)
+
 > [!WARNING]
 > **Experimental software. Use entirely at your own risk.** WirelessBridge patches
 > and runs modified copies of your head unit's own services and edits its startup and
