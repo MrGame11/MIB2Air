@@ -1,6 +1,7 @@
 # Mib2Air for MIB STD2
 
 Just a backup with a slightly better name, in my opinion. ;)
+I'll be testing this out myself soon.
 
 (Maybe I'll add some features later, who knows?)
 
