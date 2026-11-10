@@ -2,7 +2,12 @@
   <img src="docs/assets/readme-logo-v2.png" alt="MIB STD2 WirelessBridge logo" width="140">
 </p>
 
-# MIB STD2 WirelessBridge
+# Mib2Air for MIB STD2
+
+Just a backup with a slightly better name, in my opinion. ;)
+I'll be testing this out myself soon (December).
+
+(Maybe I'll add some features later, who knows?)
 
 > [!WARNING]
 > **Experimental software. Use entirely at your own risk.** WirelessBridge patches
